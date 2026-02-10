@@ -43,6 +43,7 @@ import profile_img2 from './profile_img2.png'
 import profile_img3 from './profile_img3.png'
 import lesson_icon from './lesson_icon.svg'
 import skilloralogo from './skillora-logo.png'
+import skilloralogo_dark from './skillora-logo-dark.png'
 
 
 export const assets = {
@@ -90,7 +91,8 @@ export const assets = {
     play_icon,
     blue_tick_icon,
     lesson_icon,
-    skilloralogo
+    skilloralogo,
+    skilloralogo_dark
 }
 
 export const dummyEducatorData = {

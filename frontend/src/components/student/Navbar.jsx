@@ -1,27 +1,31 @@
-import React from "react";
+import React, { useContext } from "react";
 import { assets } from "../../assets/assets";
 import { Link, useLocation } from "react-router-dom";
 import { useClerk, UserButton, useUser } from "@clerk/clerk-react";
+import { AppContext } from "../../context/AppContext";
+
 
 const Navbar = () => {
 
+    const { navigate, isEducator } = useContext(AppContext);
     const location = useLocation();
     const isCourseListPage = location.pathname.includes('/course-list');
     const { openSignIn } = useClerk();
     const { user } = useUser();
 
+
     return (
 
         <div className={`flex w-full items-center justify-between px-4 sm:px-10 md:px-14 lg:px-36 border-b border-gray-200 py-4 shadow-sm sticky top-0 z-50 backdrop-blur-md ${isCourseListPage ? 'bg-white' : 'bg-cyan-100/70'}`} >
-            <img src={assets.skilloralogo} alt="Logo" className="w-42 lg:w-52
+            <img onClick={() => navigate('/')} src={assets.skilloralogo} alt="Logo" className="w-42 lg:w-52
             cursor-pointer hover:scale-105 transition-transform duration-200"/>
 
             <div className="hidden md:flex items-center gap-6 text-gray-600">
                 <div className="flex items-center gap-4">
                     {user &&
                         <>
-                            <button className="text-base font-medium hover:text-blue-600 transition-colors duration-200 cursor-pointer">
-                                Become Educator
+                            <button className="text-base font-medium hover:text-blue-600 transition-colors duration-200 cursor-pointer" onClick={()=> {navigate('/educator')}}>
+                                {isEducator ? "Educator Dashboard" : "Become Educator"}
                             </button>
 
                             <div className="h-5 w-[2px] bg-blue-400"></div>
@@ -43,7 +47,7 @@ const Navbar = () => {
                 <div className="flex items-center gap-1 sm:gap-2 max-sm:text-xs">
                     {user &&
                         <>
-                            <button className="hover:text-blue-600 transition cursor-pointer">Become Educator</button>
+                            <button onClick={()=>(navigate('/educator'))} className="hover:text-blue-600 transition cursor-pointer">{isEducator ? "Educator Dashboard" : "Become Educator"}</button>
                             <div className="h-4 w-[2px] bg-gray-500 opacity-70"></div>
 
                             <Link to='/my-enrollments' className="hover:text-blue-600 transition">My Enrollments</Link>
