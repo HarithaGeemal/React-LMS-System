@@ -5,6 +5,7 @@ import SearchBar from "../../components/student/SearchBar";
 import CourseCard from "../../components/student/CourseCard"
 import { useParams } from 'react-router-dom';
 import { assets } from '../../assets/assets';
+import Footer from '../../components/student/Footer';
 
 const CoursesList = () => {
 
@@ -68,6 +69,7 @@ const CoursesList = () => {
                     </div>
                 )}
             </div>
+            <Footer/>
         </>
     )
 }
