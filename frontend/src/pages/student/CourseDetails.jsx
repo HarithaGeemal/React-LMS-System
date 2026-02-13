@@ -25,16 +25,20 @@ const CourseDetails = () => {
         setCourseData(Findcourse);
     }
 
-    useEffect(() => {
-        if (!allCourses || allCourses.length === 0) return;
+    useEffect(()=>{
+        fetchCourseData();
+    },[allCourses])
 
-        const foundCourse = allCourses.find(
-            course => String(course._id) === String(id)
-        );
+    // useEffect(() => {
+    //     if (!allCourses || allCourses.length === 0) return;
 
-        setCourseData(foundCourse || null);
+    //     const foundCourse = allCourses.find(
+    //         course => String(course._id) === String(id)
+    //     );
 
-    }, [allCourses, id])
+    //     setCourseData(foundCourse || null);
+
+    // }, [allCourses, id])
 
     const toggleSection = (index) => {
         setOpenSections((prev) => ({
