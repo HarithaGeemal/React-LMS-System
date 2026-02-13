@@ -6,6 +6,7 @@ import Loading from '../../components/student/Loading';
 import Footer from '../../components/student/Footer';
 import { assets } from '../../assets/assets';
 import humanizeDuration from 'humanize-duration';
+import YouTube from 'react-youtube';
 
 const CourseDetails = () => {
 
@@ -13,6 +14,7 @@ const CourseDetails = () => {
     const [courseData, setCourseData] = useState(null);
     const [openSections, setOpenSections] = useState({});
     const [isAlreadyEnrolled, setIsAlreadyEnrolled] = useState(false);
+    const [playerData, setPlayerData] = useState(null);
 
 
     const { allCourses, calculateRating, calculateChapterTime,
@@ -95,7 +97,10 @@ const CourseDetails = () => {
                                                         <div className='flex items-center justify-between w-full text-gray-800 text-xs md:text-default'>
                                                             <p>{lecture.lectureTitle}</p>
                                                             <div className='flex gap-2'>
-                                                                {lecture.isPreviewFree && <p className='text-blue-500 cursor-pointer hover:underline hover:text-blue-600'>preview</p>}
+                                                                {lecture.isPreviewFree && <p onClick={() => setPlayerData({
+                                                                    videoId: lecture.lectureUrl.split('/').pop()
+                                                                })}
+                                                                    className='text-blue-500 cursor-pointer hover:underline hover:text-blue-600'>preview</p>}
                                                                 <p>{humanizeDuration(lecture.lectureDuration * 60 * 1000, { units: ['h', 'm'], round: true })}</p>
                                                             </div>
                                                         </div>
@@ -125,10 +130,23 @@ const CourseDetails = () => {
 
                 {/* right collumn */}
                 <div className='max-w-course-card z-10 shadow-custom-card rounded-t md:rounded-none overflow-hidden bg-white min-w-[300px] sm:min-w-[420px]'>
-                    <img src={courseData.courseThumbnail} alt="" />
+
+                    {
+                        playerData ?
+                            <YouTube videoId={playerData.videoId} opts={{
+                                playerVars: {
+                                    autoplay: 1
+                                }
+                            }} iframeClassName='w-full aspect-video' />
+                            : <img src={courseData.courseThumbnail} alt="" />
+                    }
+
+
                     <div className='p-5'>
                         <div className='flex items-center gap-2'>
+
                             <img className='w-3.5' src={assets.time_left_clock_icon} alt="time left clock icon" />
+
                             <p className='text-red-500'><span className='font-medium'>5</span> days left this price</p>
                         </div>
 
@@ -158,7 +176,7 @@ const CourseDetails = () => {
                             </div>
                         </div>
 
-                        <button className='md:mt-6 mt-4 w-full py-3 rounded bg-blue-600 text-white font-medium cursor-pointer hover:bg-blue-700'>{isAlreadyEnrolled? "Already Enrolled" : "Enroll Now"}</button>
+                        <button className='md:mt-6 mt-4 w-full py-3 rounded bg-blue-600 text-white font-medium cursor-pointer hover:bg-blue-700'>{isAlreadyEnrolled ? "Already Enrolled" : "Enroll Now"}</button>
 
                         <div className='pt-6'>
                             <p className='md:text-xl text-lg font-medium text-gray-800'>Whats's in the cpurse?</p>
@@ -175,7 +193,7 @@ const CourseDetails = () => {
                 </div>
             </div>
 
-            <Footer/>
+            <Footer />
         </>
     ) : <Loading />
 }
