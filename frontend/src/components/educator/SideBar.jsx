@@ -26,6 +26,8 @@ const SideBar = () => {
                 </NavLink>
             ))}
         </div>
+
+        
     )
 }
 
