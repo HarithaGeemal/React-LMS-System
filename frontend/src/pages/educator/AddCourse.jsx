@@ -48,6 +48,36 @@ const AddCourse = () => {
         }
     }
 
+    const handleLec = (action, chapterId, lectureId) => {
+        if (action === 'add') {
+            if (!currentChatperId) return;
+
+            const newLecture = { ...lectureDetails, lectureId: uniqid() };
+
+            setChapters(prev =>
+                prev.map(ch =>
+                    ch.chapterId === currentChatperId
+                        ? { ...ch, chapterContent: [...ch.chapterContent, newLecture] }
+                        : ch
+                )
+            );
+
+            setShowPopup(false);
+            setCurrentChatperId(null);
+            setLectureDetails({ lectureTitle: '', lectureDuration: '', lectureUrl: '', isPreviewFree: false });
+
+        } else if (action === 'remove') {
+            setChapters(prev =>
+                prev.map(ch =>
+                    ch.chapterId === chapterId
+                        ? { ...ch, chapterContent: ch.chapterContent.filter(lec => lec.lectureId !== lectureId) }
+                        : ch
+                )
+            );
+        }
+    };
+
+
     useEffect(() => {
         if (!quilRef.current && editorRef.current) {
             quilRef.current = new Quill(editorRef.current, {
@@ -112,7 +142,7 @@ const AddCourse = () => {
                                 <img
                                     src={assets.cross_icon}
                                     className='cursor-pointer'
-                                    onClick={() => handleChapter('remove', chapter.lectureId)}
+                                    onClick={() => handleChapter('remove', chapter.chapterId)}
                                 />
 
                             </div>
@@ -127,7 +157,7 @@ const AddCourse = () => {
                                                 <img
                                                     src={assets.cross_icon}
                                                     className='cursor-pointer'
-                                                    onClick={() => handleChapter('remove', chapter.chapterId)}
+                                                    onClick={() => handleLec('remove', chapter.chapterId, lecture.lectureId)}
                                                 />
 
                                             </div>
@@ -179,7 +209,7 @@ const AddCourse = () => {
                                             onChange={(e) => setLectureDetails({ ...lectureDetails, isPreviewFree: e.target.checked })} />
                                     </div>
 
-                                    <button type='button' className='w-full bg-blue-400 text-white px-4 py-2 rounded'>Add</button>
+                                    <button type='button' className='w-full bg-blue-400 text-white px-4 py-2 rounded cursor-pointer' onClick={() => handleLec('add')}>Add</button>
                                     <img onClick={() => setShowPopup(false)} src={assets.cross_icon} alt="" className='absolute top-4 right-4 w-4 cursor-pointer' />
                                 </div>
 
