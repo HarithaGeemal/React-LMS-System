@@ -174,8 +174,8 @@ const AddCourse = () => {
                     <div className='flex justify-center items-center bg-blue-100 p-2 rounded-lg cursor-pointer' onClick={() => handleChapter('add')}> + Add Chapters</div>
                     {
                         showPopup && (
-                            <div className='fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50'>
-                                <div className='bg-white text-gray-700 p-4 rounded relative w-full max-w-80'>
+                            <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/40'>
+                                <div className='bg-white text-gray-700 p-4 rounded-3xl relative w-full max-w-80'>
                                     <h2 className='text-lg font-semibold mb-4'>Add Lectures</h2>
                                     <div className='mb-2'>
                                         <p>Lecture Title</p>
@@ -209,7 +209,7 @@ const AddCourse = () => {
                                             onChange={(e) => setLectureDetails({ ...lectureDetails, isPreviewFree: e.target.checked })} />
                                     </div>
 
-                                    <button type='button' className='w-full bg-blue-400 text-white px-4 py-2 rounded cursor-pointer' onClick={() => handleLec('add')}>Add</button>
+                                    <button type='button' className='w-full bg-blue-500 text-white px-4 py-2 rounded cursor-pointer hover:bg-blue-400' onClick={() => handleLec('add')}>Add</button>
                                     <img onClick={() => setShowPopup(false)} src={assets.cross_icon} alt="" className='absolute top-4 right-4 w-4 cursor-pointer' />
                                 </div>
 
@@ -217,7 +217,7 @@ const AddCourse = () => {
                         )
                     }
                 </div>
-                <button type='submit' className='bg-black text-white w-max py-2.5 px-8 rounded my-4'>ADD</button>
+                <button type='submit' className='bg-black text-white w-max py-2.5 px-8 rounded my-4 cursor-pointer hover:bg-gray-800'>ADD</button>
             </form>
         </div>
     )
