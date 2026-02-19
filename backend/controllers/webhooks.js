@@ -77,7 +77,7 @@ export const stripeWebhook = async (req, res) => {
             const paymentIntent = event.data.object;
             const paymentIntentId = paymentIntent.id;
             const session = await stripeInstance.checkout.sessions.list({ payment_intent: paymentIntentId })
-            const { purchaseId } = session.data[0].metadata;
+            const {purchaseId} = session.data[0].metadata;
 
             const purchaseData = await Purchase.findById(purchaseId);
             const userData = await User.findById(purchaseData.userId);
@@ -93,21 +93,13 @@ export const stripeWebhook = async (req, res) => {
             await purchaseData.save();
             break;
         }
-        case "payment_intent.payment_failed": {
+        case 'payment_intent.payment_failed': {
             const paymentIntent = event.data.object;
-            const sessionList = await stripe.checkout.sessions.list({
-                payment_intent: paymentIntent.id,
-                limit: 1,
-            });
-
-            const session = sessionList.data[0];
-            const purchaseId = session?.metadata?.purchaseId;
-
-            if (!purchaseId) break;
+            const paymentIntentId = paymentIntent.id;
+            const session = await stripeInstance.checkout.sessions.list({ payment_intent: paymentIntentId })
+            const {purchaseId} = session.data[0].metadata;
 
             const purchaseData = await Purchase.findById(purchaseId);
-            if (!purchaseData) break;
-
             purchaseData.status = "failed";
             await purchaseData.save();
 
