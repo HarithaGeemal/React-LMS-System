@@ -27,7 +27,7 @@ export const clerkWebhook = async (req, res) => {
                     imageUrl: data.image_url,
                 }
                 await User.create(userData);
-                return res.JSON({})
+                return res.json({})
                 break;
             }
 
@@ -38,13 +38,13 @@ export const clerkWebhook = async (req, res) => {
                     imageUrl: data.image_url,
                 }
                 await User.findByIdAndUpdate(data.id, userData);
-                res.JSON({})
+                res.json({})
                 break;
             }
 
             case 'user.deleted': {
                 await User.findByIdAndDelete(data.id);
-                res.JSON({})
+                res.json({})
                 break;
             }
 
@@ -77,9 +77,10 @@ export const stripeWebhook = async (req, res) => {
             const paymentIntent = event.data.object;
             const paymentIntentId = paymentIntent.id;
             const session = await stripeInstance.checkout.sessions.list({ payment_intent: paymentIntentId })
-            const {purchaseId} = session.data[0].metadata;
+            if (!session.data || session.data.length === 0) break;
+            const { purchaseCourseId } = session.data[0].metadata;
 
-            const purchaseData = await Purchase.findById(purchaseId);
+            const purchaseData = await Purchase.findById(purchaseCourseId);
             const userData = await User.findById(purchaseData.userId);
             const courseData = await Course.findById(purchaseData.courseId.toString());
 
@@ -96,10 +97,12 @@ export const stripeWebhook = async (req, res) => {
         case 'payment_intent.payment_failed': {
             const paymentIntent = event.data.object;
             const paymentIntentId = paymentIntent.id;
-            const session = await stripeInstance.checkout.sessions.list({ payment_intent: paymentIntentId })
-            const {purchaseId} = session.data[0].metadata;
+            const session = await stripeInstance.checkout.sessions.list({ payment_intent: paymentIntentId }) 
+            if (!session.data || session.data.length === 0) break;
 
-            const purchaseData = await Purchase.findById(purchaseId);
+            const { purchaseCourseId } = session.data[0].metadata;
+
+            const purchaseData = await Purchase.findById(purchaseCourseId);
             purchaseData.status = "failed";
             await purchaseData.save();
 

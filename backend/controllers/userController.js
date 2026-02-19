@@ -61,7 +61,7 @@ export const purchaseCourse = async (req, res) => {
         const purchaseData = {
             userId,
             courseId: courseData._id,
-            amount: (courseData.coursePrice - courseData.discount * courseData.coursePrice / 100).toFixed(2),
+            amount: Number(courseData.coursePrice - courseData.discount * courseData.coursePrice / 100).toFixed(2),
         }
 
         // saving purchase data in mongodb
@@ -89,7 +89,10 @@ export const purchaseCourse = async (req, res) => {
             success_url: `${origin}/loading/my-enrollments`,
             cancel_url: `${origin}/`,
             metadata: {
-                purchaseCourseId: newPurchase._id.toString(),
+                purchaseCourseId: newPurchase._id.toString()
+            },
+            payment_intent_data: {
+                metadata: { purchaseCourseId: newPurchase._id.toString() }
             }
         })
 
