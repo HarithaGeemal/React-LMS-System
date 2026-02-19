@@ -78,11 +78,21 @@ export const stripeWebhook = async (req, res) => {
             const paymentIntentId = paymentIntent.id;
             const session = await stripeInstance.checkout.sessions.list({ payment_intent: paymentIntentId })
             if (!session.data || session.data.length === 0) break;
-            const { purchaseCourseId } = session.data[0].metadata;
+            const purchaseCourseId = session.data[0]?.metadata?.purchaseCourseId;
+            if (!purchaseCourseId) return res.status(400).json({ error: "purchaseCourseId missing in session metadata" });
 
             const purchaseData = await Purchase.findById(purchaseCourseId);
+            if (!purchaseData) return res.status(400).json({ error: "Purchase not found", purchaseCourseId });
+
             const userData = await User.findById(purchaseData.userId);
-            const courseData = await Course.findById(purchaseData.courseId.toString());
+            if (!userData) return res.status(400).json({ error: "User not found", userId: purchaseData.userId });
+
+            const courseData = await Course.findById(purchaseData.courseId);
+            if (!courseData) return res.status(400).json({ error: "Course not found", courseId: purchaseData.courseId });
+
+            if (!Array.isArray(courseData.enrolledCourses)) courseData.enrolledCourses = [];
+            if (!Array.isArray(userData.enrolledCourses)) userData.enrolledCourses = [];
+
 
             courseData.enrolledCourses.push(userData._id);
             await courseData.save();
@@ -97,7 +107,7 @@ export const stripeWebhook = async (req, res) => {
         case 'payment_intent.payment_failed': {
             const paymentIntent = event.data.object;
             const paymentIntentId = paymentIntent.id;
-            const session = await stripeInstance.checkout.sessions.list({ payment_intent: paymentIntentId }) 
+            const session = await stripeInstance.checkout.sessions.list({ payment_intent: paymentIntentId })
             if (!session.data || session.data.length === 0) break;
 
             const { purchaseCourseId } = session.data[0].metadata;
