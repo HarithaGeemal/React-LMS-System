@@ -27,7 +27,7 @@ export const clerkWebhook = async (req, res) => {
                     imageUrl: data.image_url,
                 }
                 await User.create(userData);
-                res.JSON({})
+                return res.JSON({})
                 break;
             }
 
@@ -65,10 +65,10 @@ export const stripeWebhook = async (req, res) => {
     let event;
 
     try {
-        event = Stripe.webhooks.constructEvent(request.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+        event = Stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     }
     catch (err) {
-        res.status(400).send(`Webhook Error: ${err.message}`);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
     // Handle the event
@@ -83,7 +83,7 @@ export const stripeWebhook = async (req, res) => {
             const userData = await User.findById(purchaseData.userId);
             const courseData = await Course.findById(purchaseData.courseId.toString());
 
-            courseData.enrolledCourses.push(userData);
+            courseData.enrolledCourses.push(userData._id);
             await courseData.save();
 
             userData.enrolledCourses.push(courseData._id);
@@ -111,6 +111,6 @@ export const stripeWebhook = async (req, res) => {
     }
 
     // Return a response to acknowledge receipt of the event
-    res.json({ received: true });
+    return res.json({ received: true });
 
 }
