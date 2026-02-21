@@ -1,10 +1,15 @@
-import React, { useRef, useState, useEffect } from 'react'
+import React, { useRef, useState, useEffect, useContext } from 'react'
 import uniqid from 'uniqid'
 import Quill from 'quill'
 import { assets } from '../../assets/assets';
+import { AppContext } from '../../context/AppContext';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 
 const AddCourse = () => {
+
+    const { BACKEND_URL, getToken } = useContext(AppContext);
 
     const quilRef = useRef(null);
     const editorRef = useRef(null);
@@ -52,15 +57,25 @@ const AddCourse = () => {
         if (action === 'add') {
             if (!currentChatperId) return;
 
-            const newLecture = { ...lectureDetails, lectureId: uniqid() };
-
             setChapters(prev =>
-                prev.map(ch =>
-                    ch.chapterId === currentChatperId
-                        ? { ...ch, chapterContent: [...ch.chapterContent, newLecture] }
-                        : ch
-                )
+                prev.map(ch => {
+                    if (ch.chapterId !== currentChatperId) return ch;
+
+                    const nextOrder = (ch.chapterContent?.length ?? 0) + 1;
+
+                    const newLecture = {
+                        lectureId: uniqid(),
+                        lectureTitle: lectureDetails.lectureTitle.trim(),
+                        lectureUrl: lectureDetails.lectureUrl.trim(),
+                        lectureDuration: Number(lectureDetails.lectureDuration),
+                        isPreviewFree: Boolean(lectureDetails.isPreviewFree),
+                        lectureOrder: nextOrder,
+                    };
+
+                    return { ...ch, chapterContent: [...ch.chapterContent, newLecture] };
+                })
             );
+
 
             setShowPopup(false);
             setCurrentChatperId(null);
@@ -68,14 +83,90 @@ const AddCourse = () => {
 
         } else if (action === 'remove') {
             setChapters(prev =>
-                prev.map(ch =>
-                    ch.chapterId === chapterId
-                        ? { ...ch, chapterContent: ch.chapterContent.filter(lec => lec.lectureId !== lectureId) }
-                        : ch
-                )
+                prev.map(ch => {
+                    if (ch.chapterId !== chapterId) return ch;
+
+                    const updated = ch.chapterContent
+                        .filter(lec => lec.lectureId !== lectureId)
+                        .map((lec, i) => ({ ...lec, lectureOrder: i + 1 })); // ✅ keep orders clean
+
+                    return { ...ch, chapterContent: updated };
+                })
             );
         }
     };
+
+    const handleSubmit = async (e) => {
+        try {
+            e.preventDefault();
+            if (!image) {
+                toast.error('Please select a course image');
+                return;
+            }
+
+            if (chapters.length === 0) {
+                toast.error("Add at least one chapter");
+                return;
+            }
+
+            for (const ch of chapters) {
+                if (!ch.chapterTitle?.trim()) {
+                    toast.error("Chapter title is required");
+                    return;
+                }
+                if (!ch.chapterContent || ch.chapterContent.length === 0) {
+                    toast.error(`Chapter "${ch.chapterTitle}" has no lectures`);
+                    return;
+                }
+                for (const lec of ch.chapterContent) {
+                    if (!lec.lectureTitle?.trim() || !lec.lectureUrl?.trim() || !lec.lectureDuration) {
+                        toast.error(`Fill all lecture fields in chapter "${ch.chapterTitle}"`);
+                        return;
+                    }
+                    if (lec.lectureOrder == null) {
+                        toast.error(`Lecture order missing in chapter "${ch.chapterTitle}"`);
+                        return;
+                    }
+                }
+            }
+
+
+            const courseData = {
+                courseTitle,
+                courseDescription: quilRef.current.root.innerHTML,
+                coursePrice: Number(coursePrice),
+                discount: Number(discount),
+                courseContent: chapters
+            }
+
+            const formData = new FormData();
+            formData.append('courseData', JSON.stringify(courseData));
+            formData.append('image', image);
+
+            const token = await getToken();
+            const base = BACKEND_URL.replace(/\/$/, "");
+
+            const { data } = await axios.post(`${base}/api/educator/add-course`, formData, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+
+            if (data.success) {
+                toast.success(data.messege);
+                setCourseTitle('');
+                setCoursePrice(0);
+                setDiscount(0);
+                setImage(null);
+                setChapters([]);
+                quilRef.current.root.innerHTML = '';
+            } else {
+                toast.error(data.messege);
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
 
 
     useEffect(() => {
@@ -92,7 +183,7 @@ const AddCourse = () => {
 
     return (
         <div className='h-screen overflow-scroll flex flex-col items-start justify-between md:p-8 md:pb-0 p-4 pt-8 pb-0'>
-            <form className='flex flex-col gap-4 max-w-md w-full text-gray-500'>
+            <form onSubmit={handleSubmit} className='flex flex-col gap-4 max-w-md w-full text-gray-500'>
                 <div className='flex flex-col gap-1'>
                     <p>Course Title</p>
                     <input onChange={e => setCourseTitle(e.target.value)} value={courseTitle} type='text' placeholder='Type Here'
@@ -153,7 +244,7 @@ const AddCourse = () => {
                                             <div key={lectureIndex} className='flex justify-between items-center mb-2'>
                                                 <span>{lectureIndex + 1}{lecture.lectureTitle}-{lecture.lectureDuration}
                                                     mins - <a href={lecture.lectureUrl}
-                                                        target='_blank' className='text-blue-500'>Link</a> -{lecture.isPreviewFree ? "Free Preview" : "Paid Preview"}</span>
+                                                        target='_blank' rel="noreferrer" className='text-blue-500'>Link</a> -{lecture.isPreviewFree ? "Free Preview" : "Paid Preview"}</span>
                                                 <img
                                                     src={assets.cross_icon}
                                                     className='cursor-pointer'

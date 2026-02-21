@@ -11,7 +11,7 @@ educatorRouter.get('/update-role', updateRoleToEducator)
 educatorRouter.post('/add-course', upload.single('image'), protectEducatorRoute, addCourse)
 educatorRouter.get('/my-courses', protectEducatorRoute, getEducatorCourses)
 educatorRouter.get('/dashboard', protectEducatorRoute, getDashboardData)
-educatorRouter.get('/enrolloed-students', protectEducatorRoute, getEnrolledStudentsData)
+educatorRouter.get('/enrolled-students', protectEducatorRoute, getEnrolledStudentsData)
 
 
 

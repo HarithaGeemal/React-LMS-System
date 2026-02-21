@@ -70,10 +70,10 @@ export const getDashboardData = async (req, res) => {
     try {
         const educator = req.auth.userId
         const courses = await Course.find({ educator })
-        const totalCourse = courses.length;
+        const totalCourses = courses.length;
         const courseId = courses.map(course => course._id)
         const purchases = await Purchase.find({ courseId: { $in: courseId }, status: "completed" })
-        const totalEarning = purchases.reduce((acc, purchase) => acc + purchase.amount, 0)
+        const totalEarnings = purchases.reduce((acc, purchase) => acc + purchase.amount, 0)
 
         // collect unique enrolled student ids enrolled in courses
         const enrolledStudentsData = [];
@@ -82,13 +82,13 @@ export const getDashboardData = async (req, res) => {
 
             students.forEach(student => {
                 enrolledStudentsData.push({
-                    coursetitle: course.courseTitle,
+                    courseTitle: course.courseTitle,
                     student
                 });
             });
 
         }
-        res.json({ success: true, dashboardData: { totalCourse, totalEarning, enrolledStudentsData } })
+        res.json({ success: true, dashboardData: { totalCourses, totalEarnings, enrolledStudentsData } })
     } catch (error) {
         res.json({ success: false, messege: error.message })
     }
