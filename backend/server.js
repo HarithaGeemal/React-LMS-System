@@ -16,25 +16,13 @@ const PORT = process.env.PORT || 5000;
 await connectDB();
 connectCloudinary();
 
-const allowedOrigins = [
-    "http://localhost:5173",
-    "https://react-lms-system.vercel.app", // Vercel frontend
-];
-
 // middlewares
 
 app.use(cors({
-    origin: (origin, cb) => {
-        // allow requests with no origin (like server-to-server, webhooks, Postman)
-        if (!origin) return cb(null, true);
-        if (allowedOrigins.includes(origin)) return cb(null, true);
-        return cb(new Error(`CORS blocked for origin: ${origin}`));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    origin: ["http://localhost:5173", "https://react-lms-system.vercel.app"],
+    // frontend
+    credentials: true
 }));
-app.options("*", cors());
 app.use(clerkMiddleware());
 
 
