@@ -1,28 +1,52 @@
-import React, { useContext, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { AppContext } from '../../context/AppContext'
 import { assets } from '../../assets/assets';
 import { Line } from 'rc-progress';
 import Footer from '../../components/student/Footer';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { data } from 'react-router-dom';
 
 const MyEnrollments = () => {
 
-    const { enrolledCourses, calculateCourseDuration, navigate } = useContext(AppContext);
-    const [progressArray, setProgressArray] = useState([
-        { lectureCompleted: 2, totalLectures: 4 },
-        { lectureCompleted: 5, totalLectures: 20 },
-        { lectureCompleted: 0, totalLectures: 15 },
-        { lectureCompleted: 10, totalLectures: 10 },
-        { lectureCompleted: 30, totalLectures: 55 },
-        { lectureCompleted: 100, totalLectures: 300 },
-        { lectureCompleted: 40, totalLectures: 100 },
-        { lectureCompleted: 20, totalLectures: 55 },
-        { lectureCompleted: 0, totalLectures: 12 },
-        { lectureCompleted: 12, totalLectures: 80 },
-        { lectureCompleted: 0, totalLectures: 60 },
-        { lectureCompleted: 0, totalLectures: 10 },
-        { lectureCompleted: 60, totalLectures: 60 },
-        { lectureCompleted: 40, totalLectures: 40 }
-    ])
+    const { enrolledCourses, calculateCourseDuration, navigate, userData, fetchUserEnrolledCourses, BACKEND_URL, calculateNumberOfLectures, getToken } = useContext(AppContext);
+    const [progressArray, setProgressArray] = useState([]);
+
+
+    const getCourseProgress = async () => {
+        try {
+            const token = await getToken();
+            const tempProgressArray = await Promise.all(enrolledCourses.map(async (course) => {
+                const base = BACKEND_URL.replace(/\/$/, "");
+                const { data } = await axios.post(`${base}/api/user/get-course-progress`, { courseId: course._id }, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                })
+                let totalLectures = calculateNumberOfLectures(course);
+
+                const lectureCompleted = data.progressData ? data.progressData.lectureCompleted.length : 0;
+                return { totalLectures, lectureCompleted };
+            }))
+
+            setProgressArray(tempProgressArray);
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
+    useEffect(() => {
+        if (userData) {
+            fetchUserEnrolledCourses();
+        }
+    }, [userData])
+
+    useEffect(() => {
+        if (enrolledCourses.length > 0) {
+            getCourseProgress();
+        }
+    }, [enrolledCourses])
+
     return (
         <>
             <div className='md:px-36 px-8 pt-14 pb-12 bg-gray-50 min-h-screen'>

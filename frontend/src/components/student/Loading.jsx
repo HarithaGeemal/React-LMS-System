@@ -9,7 +9,7 @@ function Loading() {
     useEffect(() => {
         if (path) {
             const timer = setTimeout(() => {
-                navigate(`/${path}`)
+                navigate(`/my-enrollments`)
             }, 5000)
 
             return () => clearTimeout(timer);
