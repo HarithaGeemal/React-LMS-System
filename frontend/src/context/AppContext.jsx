@@ -3,6 +3,8 @@ import { dummyCourses } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
 import humanizeDuration from "humanize-duration";
 import { useAuth, useUser } from "@clerk/clerk-react";
+import { toast } from "react-toastify";
+import axios from "axios";
 
 export const AppContext = createContext();
 
@@ -10,19 +12,61 @@ export const AppContextProvider = (props) => {
 
 
     const currency = import.meta.env.VITE_CURRENCY
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
     const navigate = useNavigate();
 
     const { getToken } = useAuth();
     const { user } = useUser();
 
     const [allCourses, setAllCourses] = useState([])
-    const [isEducator, setIsEducator] = useState(true)
+    const [isEducator, setIsEducator] = useState(false)
     const [enrolledCourses, setEnrolledCourses] = useState([])
+    const [userData, setUserData] = useState(null)
 
     //fetch all courses
 
     const fetchAllCourses = async () => {
-        setAllCourses(dummyCourses)
+        try {
+            const base = BACKEND_URL.replace(/\/$/, "");
+            const { data } = await axios.get(`${base}/api/course/all`);
+
+            if (data.success) {
+                setAllCourses(data.courses)
+            } else {
+                toast.error(data.messege)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
+    // fetch userData
+
+    const fetchUserData = async () => {
+
+        if (user?.publicMetadata?.role === "educator") {
+            setIsEducator(true);
+        }
+
+        try {
+            const token = await getToken();
+
+            const base = BACKEND_URL.replace(/\/$/, "");
+            const { data } = await axios.get(`${base}/api/user/user-data`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+
+            if (data.success) {
+                setUserData(data.user)
+            } else {
+                toast.error(data.messege)
+            }
+
+        } catch (error) {
+            toast.error(error.message)
+        }
     }
 
     // function to claculate average rating of course
@@ -35,7 +79,7 @@ export const AppContextProvider = (props) => {
             totalRating += rating.rating;
         })
 
-        return (totalRating / course.courseRatings.length);
+        return Math.floor(totalRating / course.courseRatings.length);
 
     }
 
@@ -68,31 +112,48 @@ export const AppContextProvider = (props) => {
     // fetch user enrolled courses
 
     const fetchUserEnrolledCourses = async () => {
-        setEnrolledCourses(dummyCourses)
+        try {
+            const token = await getToken();
+            const base = BACKEND_URL.replace(/\/$/, "");
+            const { data } = await axios.get(`${base}/api/user/enrolled-courses`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+
+            if (data.success) {
+                setEnrolledCourses(data.enrolledCourses.reverse())
+            } else {
+                toast.error(data.messege)
+            }
+
+        } catch (error) {
+
+            toast.error(error.message)
+        }
     }
 
 
     useEffect(() => {
         fetchAllCourses();
-        fetchUserEnrolledCourses();
     }, []);
 
-    const logToken = async() => {
-        const token = await getToken();
-        console.log(token);
-    }
 
-    useEffect(()=>{
-        if(user){
-            logToken();
+
+    useEffect(() => {
+        if (user) {
+            fetchUserData()
+            fetchUserEnrolledCourses();
         }
-    },[user])
+    }, [user])
 
     const value = {
         currency, allCourses, navigate, calculateRating, isEducator, setIsEducator,
         calculateChapterTime, calculateCourseDuration, calculateNumberOfLectures, enrolledCourses,
-        fetchUserEnrolledCourses
+        fetchUserEnrolledCourses, BACKEND_URL, userData, setUserData, getToken, fetchAllCourses
     }
+
+
 
     return (
         <AppContext.Provider value={value}>

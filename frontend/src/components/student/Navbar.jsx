@@ -3,15 +3,45 @@ import { assets } from "../../assets/assets";
 import { Link, useLocation } from "react-router-dom";
 import { useClerk, UserButton, useUser } from "@clerk/clerk-react";
 import { AppContext } from "../../context/AppContext";
+import { toast } from "react-toastify";
+import axios from "axios";
 
 
 const Navbar = () => {
 
-    const { navigate, isEducator } = useContext(AppContext);
+    const { navigate, isEducator,BACKEND_URL,setIsEducator,getToken } = useContext(AppContext);
     const location = useLocation();
     const isCourseListPage = location.pathname.includes('/course-list');
     const { openSignIn } = useClerk();
     const { user } = useUser();
+
+    const becomeEducator = async() => {
+        try {
+            if(isEducator){
+                navigate('/educator')
+                return;
+            }
+
+            const token = await getToken();
+
+            const base = BACKEND_URL.replace(/\/$/, "");
+
+            const { data } = await axios.get(`${base}/api/educator/update-role`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+
+            if(data.success){
+                setIsEducator(true);
+                toast.success(data.messege)
+            }else{
+                toast.error(data.messege)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
 
 
     return (
@@ -24,11 +54,11 @@ const Navbar = () => {
                 <div className="flex items-center gap-4">
                     {user &&
                         <>
-                            <button className="text-base font-medium hover:text-blue-600 transition-colors duration-200 cursor-pointer" onClick={()=> {navigate('/educator')}}>
+                            <button className="text-base font-medium hover:text-blue-600 transition-colors duration-200 cursor-pointer" onClick={becomeEducator}>
                                 {isEducator ? "Educator Dashboard" : "Become Educator"}
                             </button>
 
-                            <div className="h-5 w-[2px] bg-blue-400"></div>
+                            <div className="h-5 w-0.5 bg-blue-400"></div>
 
                             <Link to='/my-enrollments' className="text-base font-medium hover:text-blue-600 transition-colors duration-200">My Enrollments</Link>
                         </>
@@ -47,8 +77,8 @@ const Navbar = () => {
                 <div className="flex items-center gap-1 sm:gap-2 max-sm:text-xs">
                     {user &&
                         <>
-                            <button onClick={()=>(navigate('/educator'))} className="hover:text-blue-600 transition cursor-pointer">{isEducator ? "Educator Dashboard" : "Become Educator"}</button>
-                            <div className="h-4 w-[2px] bg-gray-500 opacity-70"></div>
+                            <button onClick={becomeEducator} className="hover:text-blue-600 transition cursor-pointer">{isEducator ? "Educator Dashboard" : "Become Educator"}</button>
+                            <div className="h-4 w-0.5 bg-gray-500 opacity-70"></div>
 
                             <Link to='/my-enrollments' className="hover:text-blue-600 transition">My Enrollments</Link>
                         </>

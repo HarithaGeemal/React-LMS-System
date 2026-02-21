@@ -18,7 +18,10 @@ connectCloudinary();
 
 // middlewares
 
-app.use(cors());
+app.use(cors({
+    origin: ["http://localhost:5173"], // frontend
+    credentials: true
+}));
 app.use(clerkMiddleware());
 
 
@@ -31,5 +34,14 @@ app.post('/clerk', express.json(), clerkWebhook);
 app.use('/api/educator', express.json(), educatorRouter);
 app.use('/api/course', express.json(), courseRouter);
 app.use('/api/user', express.json(), userRouter);
+
+
+app.use((req, res) => {
+    res.status(404).json({
+        message: "Route not found",
+        method: req.method,
+        path: req.originalUrl
+    });
+});
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

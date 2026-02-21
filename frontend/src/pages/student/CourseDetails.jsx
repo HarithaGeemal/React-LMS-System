@@ -7,6 +7,8 @@ import Footer from '../../components/student/Footer';
 import { assets } from '../../assets/assets';
 import humanizeDuration from 'humanize-duration';
 import YouTube from 'react-youtube';
+import { toast } from 'react-toastify';
+import axios from 'axios';
 
 const CourseDetails = () => {
 
@@ -18,16 +20,83 @@ const CourseDetails = () => {
 
 
     const { allCourses, calculateRating, calculateChapterTime,
-        calculateCourseDuration, calculateNumberOfLectures, currency } = useContext(AppContext);
+        calculateCourseDuration, calculateNumberOfLectures, currency, BACKEND_URL, userData, getToken } = useContext(AppContext);
 
     const fetchCourseData = async () => {
-        const Findcourse = allCourses.find(course => course._id === id);
-        setCourseData(Findcourse);
+        try {
+            const base = BACKEND_URL.replace(/\/$/, "");
+            const { data } = await axios.get(`${base}/api/course/${id}`);
+            if (data.success) {
+                setCourseData(data.courseData);
+            } else {
+                toast.error(data.messege)
+            }
+
+        } catch (error) {
+            toast.error(error.message)
+        };
     }
 
-    useEffect(()=>{
+    const enrollCourse = async () => {
+        try {
+            if (!userData) {
+                return toast.error("Please login to enroll course");
+            }
+            if (isAlreadyEnrolled) {
+                return toast.error("You are already enrolled in this course");
+            }
+
+            const token = await getToken();
+            const base = BACKEND_URL.replace(/\/$/, "");
+
+            const { data } = await axios.post(`${base}/api/user/purchase`,
+                { courseId: courseData._id }, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+                .then((res) => {
+                    if (res.data.success) {
+                        toast.success(res.data.messege);
+                        const { session_url } = res.data;
+                        window.location.replace(session_url);
+                    } else {
+                        toast.error(res.data.messege);
+                    }
+                })
+        } catch (error) {
+            toast.error(error.message);
+        }
+    }
+
+    const extractVideoId = (url) => {
+        if (!url) return null;
+        try {
+            const u = new URL(url);
+            // works for https://www.youtube.com/watch?v=XXXX
+            const v = u.searchParams.get("v");
+            if (v) return v;
+
+            // bonus: support youtu.be/XXXX and /embed/XXXX
+            const m = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})|\/embed\/([a-zA-Z0-9_-]{11})/);
+            return m ? (m[1] || m[2]) : null;
+        } catch {
+            // if user stored only the id
+            return /^[a-zA-Z0-9_-]{11}$/.test(url) ? url : null;
+        }
+    };
+
+    const videoId = extractVideoId(playerData?.lectureUrl);
+
+    useEffect(() => {
         fetchCourseData();
-    },[allCourses])
+    }, [])
+
+    useEffect(() => {
+        if (userData && courseData) {
+            setIsAlreadyEnrolled(userData.enrolledCourses.includes(courseData._id));
+        }
+    }, [userData, courseData])
 
     // useEffect(() => {
     //     if (!allCourses || allCourses.length === 0) return;
@@ -52,7 +121,7 @@ const CourseDetails = () => {
         justify-between md:px-36 px-8 md:pt-30 pt-20 text-left'>
 
                 <div className='absolute top-0 left-0 w-full h-section-height z-1
-            bg-gradient-to-b from-cyan-100/70'></div>
+            bg-linear-to-b from-cyan-100/70'></div>
 
                 {/* left collumn */}
                 <div className='max-w-xl z-10 text-gray-500'>
@@ -75,7 +144,7 @@ const CourseDetails = () => {
                         <p> {courseData.enrolledStudents.length} {courseData.enrolledStudents.length > 1 ? 'students' : 'student'} enrolled</p>
                     </div>
 
-                    <p className='text-sm'>Course by <span className='text-blue-600 underline'>Anjela Yu</span></p>
+                    <p className='text-sm'>Course by <span className='text-blue-600 underline'>{courseData.educator.name}</span></p>
 
                     <div className='pt-8 text-gray-800'>
 
@@ -101,10 +170,25 @@ const CourseDetails = () => {
                                                         <div className='flex items-center justify-between w-full text-gray-800 text-xs md:text-default'>
                                                             <p>{lecture.lectureTitle}</p>
                                                             <div className='flex gap-2'>
-                                                                {lecture.isPreviewFree && <p onClick={() => setPlayerData({
-                                                                    videoId: lecture.lectureUrl.split('/').pop()
-                                                                })}
-                                                                    className='text-blue-500 cursor-pointer hover:underline hover:text-blue-600'>preview</p>}
+                                                                {lecture.isPreviewFree && (
+                                                                    <p
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation(); // prevents section toggle when clicking preview
+                                                                            const id = extractVideoId(lecture.lectureUrl);
+                                                                            if (!id) return toast.error("Invalid YouTube URL");
+                                                                            setPlayerData({
+                                                                                lectureUrl: lecture.lectureUrl, // keep original if you want
+                                                                                videoId: id,
+                                                                                chapter: index + 1,
+                                                                                lecture: i + 1,
+                                                                                lectureTitle: lecture.lectureTitle,
+                                                                            });
+                                                                        }}
+                                                                        className="text-blue-500 cursor-pointer hover:underline hover:text-blue-600"
+                                                                    >
+                                                                        preview
+                                                                    </p>
+                                                                )}
                                                                 <p>{humanizeDuration(lecture.lectureDuration * 60 * 1000, { units: ['h', 'm'], round: true })}</p>
                                                             </div>
                                                         </div>
@@ -133,17 +217,25 @@ const CourseDetails = () => {
                 </div>
 
                 {/* right collumn */}
-                <div className='max-w-course-card z-10 shadow-custom-card rounded-t md:rounded-none overflow-hidden bg-white min-w-[300px] sm:min-w-[420px]'>
+                <div className='max-w-course-card z-10 shadow-custom-card rounded-t md:rounded-none overflow-hidden bg-white min-w-75 sm:min-w-105'>
 
-                    {
-                        playerData ?
-                            <YouTube videoId={playerData.videoId} opts={{
-                                playerVars: {
-                                    autoplay: 1
-                                }
-                            }} iframeClassName='w-full aspect-video' />
-                            : <img src={courseData.courseThumbnail} alt="" />
-                    }
+                    {videoId ? (
+                        <div>
+                            <YouTube videoId={videoId} iframeClassName="w-full aspect-video" />
+                            <div className="flex justify-between items-center mt-1">
+                                <p>
+                                    {playerData?.chapter}.{playerData?.lecture} {playerData?.lectureTitle}
+                                </p>
+                                <button className="text-blue-600 hover:underline cursor-pointer">
+                                    Mark Completed
+                                </button>
+                            </div>
+                        </div>
+                    ) : courseData?.courseThumbnail ? (
+                        <img src={courseData.courseThumbnail} alt="course thumbnail" />
+                    ) : (
+                        <div className="text-gray-500 text-sm">Select a lecture to play</div>
+                    )}
 
 
                     <div className='p-5'>
@@ -180,7 +272,7 @@ const CourseDetails = () => {
                             </div>
                         </div>
 
-                        <button className='md:mt-6 mt-4 w-full py-3 rounded bg-blue-600 text-white font-medium cursor-pointer hover:bg-blue-700'>{isAlreadyEnrolled ? "Already Enrolled" : "Enroll Now"}</button>
+                        <button onClick={enrollCourse} className='md:mt-6 mt-4 w-full py-3 rounded bg-blue-600 text-white font-medium cursor-pointer hover:bg-blue-700'>{isAlreadyEnrolled ? "Already Enrolled" : "Enroll Now"}</button>
 
                         <div className='pt-6'>
                             <p className='md:text-xl text-lg font-medium text-gray-800'>Whats's in the cpurse?</p>

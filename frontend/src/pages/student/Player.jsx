@@ -17,12 +17,33 @@ const Player = () => {
     const [openSections, setOpenSections] = useState({});
     const [playerData, setPlayerData] = useState(null);
 
+
+
     const getCourseData = () => {
         enrolledCourses.map((course) => {
             if (course._id === courseId) setCourseData(course);
 
         })
     }
+
+    const extractVideoId = (url) => {
+        if (!url) return null;
+        try {
+            const u = new URL(url);
+            // works for https://www.youtube.com/watch?v=XXXX
+            const v = u.searchParams.get("v");
+            if (v) return v;
+
+            // bonus: support youtu.be/XXXX and /embed/XXXX
+            const m = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})|\/embed\/([a-zA-Z0-9_-]{11})/);
+            return m ? (m[1] || m[2]) : null;
+        } catch {
+            // if user stored only the id
+            return /^[a-zA-Z0-9_-]{11}$/.test(url) ? url : null;
+        }
+    };
+
+    const videoId = extractVideoId(playerData?.lectureUrl);
 
     const toggleSection = (index) => {
         setOpenSections((prev) => ({
@@ -85,7 +106,7 @@ const Player = () => {
                     <div className='flex items-center gap-2 py-3 mt-10'>
                         <h1 className='text-xl font-bold'>Rate this Course</h1>
                         <div className="flex items-center flex-nowrap">
-                            <Rating initialRating={0}/>
+                            <Rating initialRating={0} />
 
                         </div>
                     </div>
@@ -96,18 +117,23 @@ const Player = () => {
 
                 {/* right column */}
                 <div className='md:mt-10'>
-                    {playerData ? (
+                    {videoId ? (
                         <div>
-                            <YouTube videoId={playerData.lectureUrl.split('/').pop()}
-                                iframeClassName='w-full aspect-video' />
-                            <div className='flex justify-between items-center mt-1'>
-                                <p>{playerData.chapter}.{playerData.lecture} {playerData.lectureTitle}</p>
-                                <button className='text-blue-600 hover:underline cursor-pointer'>{false ? 'Completed' : 'Mark Completed'}</button>
+                            <YouTube videoId={videoId} iframeClassName="w-full aspect-video" />
+                            <div className="flex justify-between items-center mt-1">
+                                <p>
+                                    {playerData?.chapter}.{playerData?.lecture} {playerData?.lectureTitle}
+                                </p>
+                                <button className="text-blue-600 hover:underline cursor-pointer">
+                                    Mark Completed
+                                </button>
                             </div>
                         </div>
-                    ) :
-                        <img src={courseData ? courseData.courseThumbnail : ''} alt="" />
-                    }
+                    ) : courseData?.courseThumbnail ? (
+                        <img src={courseData.courseThumbnail} alt="course thumbnail" />
+                    ) : (
+                        <div className="text-gray-500 text-sm">Select a lecture to play</div>
+                    )}
 
                 </div>
             </div>
