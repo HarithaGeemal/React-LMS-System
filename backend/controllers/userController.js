@@ -104,6 +104,7 @@ export const purchaseCourse = async (req, res) => {
     }
 }
 
+
 // update user Course Progress
 export const updateUserCourseProgress = async (req, res) => {
     try {
